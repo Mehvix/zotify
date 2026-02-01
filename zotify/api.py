@@ -5,12 +5,31 @@ import music_tag
 import requests
 import subprocess
 import uuid
+import time
 from typing import Type
+from requests.exceptions import ConnectionError as RequestsConnectionError
+import urllib3.exceptions as urllib3_exceptions
+import http.client as http_client
 
 from zotify import __version__
 from zotify.const import *
 from zotify.termoutput import PrintChannel, Printer, Loader, Interface
 from zotify.utils import *
+
+
+def _is_transient_conn_error(exc) -> bool:
+	if isinstance(exc, (RequestsConnectionError, urllib3_exceptions.ProtocolError, http_client.RemoteDisconnected)):
+		return True
+
+	cause = getattr(exc, "__cause__", None)
+	if cause and cause is not exc:
+		if _is_transient_conn_error(cause):
+			return True
+	context = getattr(exc, "__context__", None)
+	if context and context is not exc:
+		if _is_transient_conn_error(context):
+			return True
+	return False
 
 
 def filter_search_query(search_query: str, item_types: tuple[str]) -> dict[str, str]:
@@ -1184,10 +1203,27 @@ class Container(Content):
 
         pbar, pbar_stack = self.create_pbar(pbar_stack)
         for child in pbar:
-            child.download(pbar_stack)
-            Printer.refresh_all_pbars(pbar_stack)
-            if isinstance(child, DLContent):
-                wait_between_downloads(child.check_skippable())
+            attempt = 0
+            while True:
+                try:
+                    child.download(pbar_stack)
+
+                    Printer.refresh_all_pbars(pbar_stack)
+                    if isinstance(child, DLContent):
+                        wait_between_downloads(child.check_skippable())
+                    break
+                except Exception as e:
+                    if _is_transient_conn_error(e):
+                        attempt += 1
+                        if attempt >= 3:
+                            logger = getattr(self, "logger", None)
+                            if logger:
+                                logger.warning("Skipping item after %d attempts due to connection error: %s", attempt, e)
+                            break
+                        time.sleep(2 + 0.5 * (2 ** (attempt - 1)))
+                        continue
+                    raise e
+
         self.mark_downloaded() # technically should have no effect, as last child marks parent downloaded
 
 
