@@ -1622,9 +1622,12 @@ class Query(Container):
                 album_resps = Zotify.invoke_url_bulk(url, list(album_ids.keys()), ALBUMS, ITEM_FETCH[Album])
                 for album_resp in album_resps:
                     a = album_ids[album_resp[ID]]
-                    a.parse_metadata(album_resp)
-                    if a.needs_expansion:
-                        a.grab_more_children(hide_loader=True)
+                    try:
+                        a.parse_metadata(album_resp)
+                        if a.needs_expansion:
+                            a.grab_more_children(hide_loader=True)
+                    except Exception as e:
+                        pass
 
     def get_m3u8_dir(self, content_list: list[DLContent], force_common_dir: bool = False) -> PurePath | None:
         m3u8_dir = Zotify.CONFIG.get_m3u8_location()
