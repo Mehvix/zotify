@@ -270,7 +270,10 @@ class Content(metaclass=DynamicClassNameAttrs):
                     obj.parse_metadata(resp) # theoretically shouldn't lose metadata by re-parsing if obj was parsed prev
                     objs.append(obj)
                 except Exception as e:
-                    Printer.hashtaged(PrintChannel.WARNING, e)
+                    try:
+                        Printer.hashtaged(PrintChannel.WARNING, e)
+                    except Exception as _:
+                        Printer.hashtaged(PrintChannel.WARNING, 'bruh')
         return objs
 
     def mark_downloaded(self, path: PurePath | None = None):
