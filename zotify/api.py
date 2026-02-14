@@ -270,7 +270,7 @@ class Content(metaclass=DynamicClassNameAttrs):
                     obj.parse_metadata(resp) # theoretically shouldn't lose metadata by re-parsing if obj was parsed prev
                     objs.append(obj)
                 except Exception as e:
-                    Printer.traceback(e)
+                    Printer.hashtaged(PrintChannel.WARNING, e)
         return objs
 
     def mark_downloaded(self, path: PurePath | None = None):
@@ -568,7 +568,16 @@ class Track(DLContent):
                 if not artist[URI]:
                     artist[URI] = f":local:{artist[NAME]}:::" # fallback for local tracks
             self.artists = self.parse_linked_objs(track_resp[ARTISTS], Artist)
-            self.printing_label = fix_filename(self.artists[0].name) + ' - ' + fix_filename(self.name)
+            try:
+                self.printing_label = fix_filename(self.artists[0].name) + ' - ' + fix_filename(self.name)
+            except Exception as e:
+                try:
+                    Printer.hashtaged(PrintChannel.WARNING, "NO ARISTS, USING NAME")
+                    self.printing_label = fix_filename(self.name)
+                except Exception as e:
+                    Printer.hashtaged(PrintChannel.WARNING, "NAME FAILED TOO, LMAO")
+                    self.printing_label = "_UNKNOWN"
+                pass
 
         if isinstance(self.parent, Playlist):
             self.added_at = track_resp[ADDED_AT]
