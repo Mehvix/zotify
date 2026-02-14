@@ -1839,11 +1839,8 @@ class UserItem(Query):
                 obj.added_at = added_date
             user_item_resps = [resp[self.inner_stripper] for resp in user_item_resps]
         self.parse_direct_metadata(wrapped_objs, [user_item_resps])
-        try:
-            self.fetch_extra_metadata()
-            self.download()
-        except Exception as e:
-            pass
+        self.fetch_extra_metadata()
+        self.download()
 
 
 class LikedSong(UserItem):
