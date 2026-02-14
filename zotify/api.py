@@ -926,10 +926,13 @@ class Track(DLContent):
                 jpg_file.write(img)
 
     def check_skippable(self) -> bool:
-        if super().check_skippable():
-            return self.skippable
-        elif self.album:
-            self.skippable = self.album.check_skippable()
+        try:
+            if super().check_skippable():
+                return self.skippable
+            elif self.album:
+                self.skippable = self.album.check_skippable()
+        except Exception as _:
+            return True
 
         if self.skippable:
             return self.skippable
