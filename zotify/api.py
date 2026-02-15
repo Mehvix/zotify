@@ -270,10 +270,7 @@ class Content(metaclass=DynamicClassNameAttrs):
                     obj.parse_metadata(resp) # theoretically shouldn't lose metadata by re-parsing if obj was parsed prev
                     objs.append(obj)
                 except Exception as e:
-                    try:
-                        Printer.hashtaged(PrintChannel.WARNING, e)
-                    except Exception as _:
-                        Printer.hashtaged(PrintChannel.WARNING, 'bruh')
+                    Printer.traceback(e)
         return objs
 
     def mark_downloaded(self, path: PurePath | None = None):
@@ -571,16 +568,7 @@ class Track(DLContent):
                 if not artist[URI]:
                     artist[URI] = f":local:{artist[NAME]}:::" # fallback for local tracks
             self.artists = self.parse_linked_objs(track_resp[ARTISTS], Artist)
-            try:
-                self.printing_label = fix_filename(self.artists[0].name) + ' - ' + fix_filename(self.name)
-            except Exception as e:
-                try:
-                    Printer.hashtaged(PrintChannel.WARNING, "NO ARISTS, USING NAME")
-                    self.printing_label = fix_filename(self.name)
-                except Exception as e:
-                    Printer.hashtaged(PrintChannel.WARNING, "NAME FAILED TOO, LMAO")
-                    self.printing_label = "_UNKNOWN"
-                pass
+            self.printing_label = fix_filename(self.artists[0].name) + ' - ' + fix_filename(self.name)
 
         if isinstance(self.parent, Playlist):
             self.added_at = track_resp[ADDED_AT]
@@ -926,13 +914,10 @@ class Track(DLContent):
                 jpg_file.write(img)
 
     def check_skippable(self) -> bool:
-        try:
-            if super().check_skippable():
-                return self.skippable
-            elif self.album:
-                self.skippable = self.album.check_skippable()
-        except Exception as _:
-            return True
+        if super().check_skippable():
+            return self.skippable
+        elif self.album:
+            self.skippable = self.album.check_skippable()
 
         if self.skippable:
             return self.skippable
@@ -1625,12 +1610,9 @@ class Query(Container):
                 album_resps = Zotify.invoke_url_bulk(url, list(album_ids.keys()), ALBUMS, ITEM_FETCH[Album])
                 for album_resp in album_resps:
                     a = album_ids[album_resp[ID]]
-                    try:
-                        a.parse_metadata(album_resp)
-                        if a.needs_expansion:
-                            a.grab_more_children(hide_loader=True)
-                    except Exception as e:
-                        pass
+                    a.parse_metadata(album_resp)
+                    if a.needs_expansion:
+                        a.grab_more_children(hide_loader=True)
 
     def get_m3u8_dir(self, content_list: list[DLContent], force_common_dir: bool = False) -> PurePath | None:
         m3u8_dir = Zotify.CONFIG.get_m3u8_location()
