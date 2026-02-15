@@ -265,12 +265,9 @@ class Content(metaclass=DynamicClassNameAttrs):
         objs = []
         for rawobj, resp in zip(rawobjs, resps):
             obj = self.tree.createChild(rawobj)
-            if not obj.hasMetadata: # overly cautious -- but not enough!
-                try:
-                    obj.parse_metadata(resp) # theoretically shouldn't lose metadata by re-parsing if obj was parsed prev
-                    objs.append(obj)
-                except Exception as e:
-                    Printer.traceback(e)
+            if not obj.hasMetadata: # overly cautious
+                obj.parse_metadata(resp) # theoretically shouldn't lose metadata by re-parsing if obj was parsed prev
+            objs.append(obj)
         return objs
 
     def mark_downloaded(self, path: PurePath | None = None):
